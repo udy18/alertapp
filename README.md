@@ -1,48 +1,51 @@
-Flask Emergency Alert App
+# Flask Emergency Alert App
 
-This Flask-based application enables users to send emergency alerts to contacts located within a specified distance. It integrates the Google Maps Geocoding API for address resolution and the Twilio API for delivering SMS notifications.
+A small Flask-based application that sends emergency SMS alerts to contacts within a specified radius. The app reads contacts from a local SQLite database, geocodes addresses via the Google Maps Geocoding API, and sends SMS messages using Twilio.
 
-Features
+## Features
 
-Contact Retrieval from SQLite Database
-Reads phone numbers and addresses from a local SQLite database for processing.
+- Contact retrieval from a local SQLite database
+- Geocoding addresses (Google Maps Geocoding API)
+- Proximity detection (returns contacts within a given distance)
+- SMS alert dispatch via Twilio
 
-Proximity Detection
-Calculates the distance between the user’s current coordinates and each contact’s geocoded location, returning only those within the specified maximum distance.
+## Requirements
 
-SMS Alerts via Twilio
-Sends emergency SMS messages to contacts identified within the defined radius.
+- Python 3.x
+- Flask
+- Flask-CORS
+- Requests
+- SQLite3
+- Twilio
+- Geopy
 
-Requirements
+(Install packages with `pip install -r requirements.txt` — see Setup below.)
 
-Python 3.x
+## Setup
 
-Flask
-
-Flask-CORS
-
-Requests
-
-SQLite3
-
-Twilio
-
-Geopy
-
-Setup
-
-Clone the repository:
-
+1. Clone the repository:
+```bash
 git clone https://github.com/udy18/flask-emergency-alert-app.git
+cd flask-emergency-alert-app
+```
 
-
-Install the required dependencies:
-
+2. Install dependencies:
+```bash
 pip install -r requirements.txt
+```
 
+3. Configure credentials
 
-Add your Twilio and Google Maps API credentials in app.py:
+You can either edit `app.py` to add credentials directly (not recommended), or set environment variables and modify the app to read them. Example environment variables:
+```bash
+export TWILIO_ACCOUNT_SID="your_account_sid"
+export TWILIO_AUTH_TOKEN="your_auth_token"
+export TWILIO_PHONE_NUMBER="+1234567890"
+export GOOGLE_MAPS_API_KEY="your_api_key"
+```
 
+If your current code expects values in `app.py`, add or update the following variables there:
+```python
 # Twilio account credentials
 account_sid = "your_account_sid"
 auth_token = "your_auth_token"
@@ -50,49 +53,88 @@ twilio_phone_number = "your_twilio_number"
 
 # Google Maps API key
 google_maps_api_key = "your_api_key"
+```
 
+4. Create the SQLite database
 
-Create the contacts.db SQLite database in the project root directory.
+Create a `contacts.db` SQLite database in the project root and populate it with your contacts (phone numbers and addresses). The schema depends on how `app.py` reads contacts—ensure columns match the app's expectations.
 
-Start the application:
-
+5. Start the application:
+```bash
 python app.py
+```
 
-
-The application will run at:
-
+The application runs at:
 http://localhost:5000/
 
-API Endpoints
-GET /
+## API Endpoints
 
-Returns a default "Hello, World!" message.
+### GET /
+Returns a default message (e.g., "Hello, World!").
 
-POST /alert
+Example:
+```bash
+curl http://localhost:5000/
+```
 
-Accepts a JSON payload containing:
+### POST /alert
+Sends an alert to contacts within the provided radius from the given coordinates.
 
-latitude: Latitude of the requesting user
+Request JSON payload:
+```json
+{
+  "latitude": 12.345678,
+  "longitude": 98.765432,
+  "max_distance": 5.0
+}
+```
+- latitude: latitude of the requesting user (decimal degrees)
+- longitude: longitude of the requesting user (decimal degrees)
+- max_distance: maximum distance in kilometers to search for contacts
 
-longitude: Longitude of the requesting user
+Example curl request:
+```bash
+curl -X POST http://localhost:5000/alert \
+  -H "Content-Type: application/json" \
+  -d '{"latitude": 12.345678, "longitude": 98.765432, "max_distance": 5.0}'
+```
 
-max_distance: Maximum distance (in kilometers) to search for contacts
+Example response (structure may vary depending on implementation):
+```json
+{
+  "contacts": [
+    {
+      "name": "Alice",
+      "phone": "+1234567890",
+      "address": "123 Example St, City, Country",
+      "distance_km": 2.3
+    },
+    {
+      "name": "Bob",
+      "phone": "+1987654321",
+      "address": "456 Another Rd, City, Country",
+      "distance_km": 4.8
+    }
+  ],
+  "count": 2
+}
+```
 
-The response includes a list of contacts within the specified radius, along with their phone numbers, addresses, and calculated distances.
+## Notes & Recommendations
 
-Future Improvements
+- Use environment variables for credentials (Twilio, Google) instead of hardcoding.
+- Ensure your Google Maps API key has Geocoding API enabled and request quotas are sufficient.
+- Validate phone numbers and addresses during data entry to avoid failed SMS or geocoding calls.
+- Consider rate-limiting or authorization on the API to prevent abuse.
 
-User Authentication
-Restrict alert-sending operations to verified and authorized users.
+## Future Improvements
 
-Database Enhancement
-Replace SQLite with a scalable database (e.g., PostgreSQL or MySQL) for improved performance and reliability.
+- User authentication and authorization for sending alerts
+- Replace SQLite with a more scalable database (PostgreSQL, MySQL)
+- Asynchronous processing (e.g., Celery) for SMS dispatch to improve responsiveness
+- Robust error handling and structured logging
+- Frontend UI (React, Vue, or Angular) for easier interaction
 
-Asynchronous Processing
-Integrate Celery or similar tools to handle SMS dispatch asynchronously and reduce API response times.
+## License
 
-Robust Error Handling and Logging
-Add structured logging and improved exception handling for diagnostics and stability.
-
-Frontend Integration
-Build a frontend interface (React, Angular, or Vue.js) for improved usability and end-user interaction.
+Add a license if you want to make the repository open source (e.g., MIT, Apache 2.0).
